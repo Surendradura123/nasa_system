@@ -8,7 +8,7 @@ function App() {
     <div className="container">
       <h1>🚀 NASA Explorer</h1>
       <Apod />
-      <Mars />
+      
       <Neo />
     </div>
   );

@@ -18,14 +18,16 @@ exports.getApod = async () => {
   }
 };
 
+
+
 exports.getMarsPhotos = async () => {
   try {
-    const res = await nasaClient.get(
-      "/mars-photos/api/v1/rovers/curiosity/photos",
+    const res = await axios.get(
+      "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos",
       {
         params: {
           sol: 1000,
-          api_key: config.nasaApiKey || "DEMO_KEY"
+          api_key: process.env.NASA_API_KEY || "DEMO_KEY"
         }
       }
     );
@@ -33,16 +35,27 @@ exports.getMarsPhotos = async () => {
     return res.data;
 
   } catch (err) {
-    console.error("🔥 NASA ERROR FULL:", {
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message
-    });
+    console.error("Mars API failed, using fallback");
 
-    throw err;
+    // ✅ fallback data
+    return {
+      photos: [
+        {
+          id: 1,
+          img_src: "https://mars.nasa.gov/system/resources/detail_files/25667_PIA23764-16.jpg"
+        },
+        {
+          id: 2,
+          img_src: "https://mars.nasa.gov/system/resources/detail_files/25668_PIA23764-32.jpg"
+        },
+        {
+          id: 3,
+          img_src: "https://mars.nasa.gov/system/resources/detail_files/25669_PIA23764-48.jpg"
+        }
+      ]
+    };
   }
 };
-
 exports.getNeoFeed = async () => {
   try {
     const res = await nasaClient.get("/neo/rest/v1/feed", {

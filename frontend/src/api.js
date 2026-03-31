@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5001/api";
+const BASE_URL = "https://nasa-system-backend.onrender.com/api";
 
 export const getApod = async () => {
   const res = await fetch(`${BASE_URL}/apod`);
