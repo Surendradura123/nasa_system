@@ -29,4 +29,23 @@ exports.getNeoFeed = async (req, res) => {
   }
 };
 
+exports.getEpic = async (req, res) => {
+  try {
+    const data = await nasaService.getEpic();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch EPIC data" });
+  }
+};
+
+exports.searchImages = async (req, res) => {
+  try {
+    const query = req.query.q || "space";
+    const data = await nasaService.searchImages(query);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Search failed" });
+  }
+};
+
 console.log("Fetching data from NASA...");

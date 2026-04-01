@@ -77,3 +77,46 @@ exports.getNeoFeed = async () => {
     throw err;
   }
 };
+
+// 🌍 EPIC (Earth images)
+exports.getEpic = async () => {
+  try {
+    const res = await nasaClient.get("/EPIC/api/natural", {
+      params: { api_key: config.nasaApiKey }
+    });
+
+    return res.data;
+  } catch (err) {
+    console.error("EPIC API failed");
+
+    return [
+      {
+        identifier: "fallback",
+        caption: "Earth Image",
+        image: "epic_1b_20220301000000"
+      }
+    ];
+  }
+};
+
+// 🔎 NASA Image Search
+exports.searchImages = async (query = "space") => {
+  try {
+    const res = await nasaClient.get(
+      "https://images-api.nasa.gov/search",
+      {
+        params: { q: query }
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error("NASA Search API failed");
+
+    return {
+      collection: {
+        items: []
+      }
+    };
+  }
+};
