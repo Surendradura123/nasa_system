@@ -2,6 +2,7 @@ const axios = require("axios");
 
 let fallbackLogged = false;
 
+// 🌌 APOD (Astronomy Picture of the Day)
 exports.getApod = async () => {
   try {
     const res = await axios.get("https://api.nasa.gov/planetary/apod", {
@@ -18,6 +19,7 @@ exports.getApod = async () => {
   }
 };
 
+// 🚀 Mars Rover Photos
 exports.getMarsPhotos = async () => {
   try {
     const res = await axios.get(
@@ -62,6 +64,7 @@ exports.getMarsPhotos = async () => {
   }
 };
 
+// ☄️ NEO (Near Earth Objects)
 exports.getNeoFeed = async () => {
   try {
     const res = await axios.get("https://api.nasa.gov/neo/rest/v1/feed", {
@@ -85,15 +88,26 @@ exports.getEpic = async () => {
       params: { api_key: config.nasaApiKey }
     });
 
-    return res.data;
+    // ✅ Convert to usable image URLs
+    const images = res.data.map((item) => {
+      const date = item.date.split(" ")[0].replace(/-/g, "/");
+
+      return {
+        caption: item.caption,
+        image: `https://epic.gsfc.nasa.gov/archive/natural/${date}/jpg/${item.image}.jpg`
+      };
+    });
+
+    return images;
+
   } catch (err) {
     console.error("EPIC API failed");
 
+    // ✅ fallback
     return [
       {
-        identifier: "fallback",
-        caption: "Earth Image",
-        image: "epic_1b_20220301000000"
+        caption: "Earth from space",
+        image: "https://epic.gsfc.nasa.gov/archive/natural/2022/03/01/jpg/epic_1b_20220301000000.jpg"
       }
     ];
   }
