@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getEpic } from "../services/api";
+import { getEpic } from "../api";
 
 export default function Epic() {
   const [data, setData] = useState([]);
