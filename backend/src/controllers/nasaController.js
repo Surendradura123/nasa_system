@@ -1,5 +1,6 @@
 const nasaService = require("../services/nasaService");
 
+// Fetch Astronomy Picture of the Day (APOD)
 exports.getApod = async (req, res) => {
   try {
     const data = await nasaService.getApod();
@@ -10,6 +11,7 @@ exports.getApod = async (req, res) => {
   }
 };
 
+// Fetch Mars photos
 exports.getMarsPhotos = async (req, res) => {
   try {
     const data = await nasaService.getMarsPhotos();
@@ -20,6 +22,7 @@ exports.getMarsPhotos = async (req, res) => {
   }
 };
 
+// Fetch NEO feed
 exports.getNeoFeed = async (req, res) => {
   try {
     const data = await nasaService.getNeoFeed();
@@ -29,6 +32,7 @@ exports.getNeoFeed = async (req, res) => {
   }
 };
 
+// Fetch EPIC data
 exports.getEpic = async (req, res) => {
   try {
     const data = await nasaService.getEpic();
@@ -38,6 +42,7 @@ exports.getEpic = async (req, res) => {
   }
 };
 
+// Search NASA images based on query
 exports.searchImages = async (req, res) => {
   try {
     const query = req.query.q || "space";
@@ -48,4 +53,5 @@ exports.searchImages = async (req, res) => {
   }
 };
 
+// Log data fetching
 console.log("Fetching data from NASA...");

@@ -128,3 +128,6 @@ exports.searchImages = async (query = "space") => {
     };
   }
 };
+
+// Log service initialization
+console.log("NASA Service initialized");
