@@ -79,30 +79,34 @@ exports.getNeoFeed = async () => {
 // 🌍 EPIC (Earth images)
 exports.getEpic = async () => {
   try {
-    const res = await nasaClient.get("/EPIC/api/natural", {
-      params: { api_key: config.nasaApiKey },
+    // 1️⃣ Get available dates
+    const datesRes = await nasaClient.get("/EPIC/api/natural/all", {
+      params: { api_key: config.nasaApiKey }
     });
 
-    // ✅ Convert to usable image URLs
-    const images = res.data.map((item) => {
-      const date = item.date.split(" ")[0].replace(/-/g, "/");
+    const dates = datesRes.data;
 
-      return {
-        caption: item.caption,
-        image: `https://epic.gsfc.nasa.gov/archive/natural/${date}/jpg/${item.image}.jpg`,
-      };
+    if (!dates.length) throw new Error("No EPIC dates");
+
+    // 2️⃣ Pick latest date
+    const latest = dates[dates.length - 1].date;
+
+    // 3️⃣ Fetch images for that date
+    const res = await nasaClient.get(`/EPIC/api/natural/date/${latest}`, {
+      params: { api_key: config.nasaApiKey }
     });
 
-    return images;
+    return res.data;
+
   } catch (err) {
     console.error("EPIC API failed");
 
+    // fallback
     return [
       {
-        caption: "Earth fallback",
-        image:
-          "https://epic.gsfc.nasa.gov/archive/natural/2022/03/01/jpg/epic_1b_20220301000000.jpg",
-      },
+        image: "epic_1b_20230301011328",
+        date: "2023-03-01 01:13:28"
+      }
     ];
   }
 };

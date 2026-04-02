@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getApod } from "../api";
+import { getApod } from "../services/api";
 
 export default function Apod() {
   const [data, setData] = useState(null);

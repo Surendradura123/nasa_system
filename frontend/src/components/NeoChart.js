@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getNeo } from "../api";
+import { getNeo } from "../services/api";
 import {
   LineChart,
   Line,

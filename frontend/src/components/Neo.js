@@ -1,21 +1,17 @@
-import { useEffect, useState } from "react";
-import { getNeo } from "../api";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-export default function Neo() {
-  const [neo, setNeo] = useState(null);
+const sizeData = Object.values(data.near_earth_objects).flat().map((obj) => ({
+  name: obj.name,
+  size: obj.estimated_diameter.meters.estimated_diameter_max
+}));
 
-  useEffect(() => {
-    getNeo().then(setNeo);
-  }, []);
+const topAsteroids = sizeData.slice(0, 8);
 
-  if (!neo) return <p>Loading NEO data...</p>;
-
-  const count = Object.keys(neo.near_earth_objects).length;
-
-  return (
-    <div className="card">
-      <h2>Near Earth Objects</h2>
-      <p>Days tracked: {count}</p>
-    </div>
-  );
-}
+<ResponsiveContainer width="100%" height={300}>
+  <BarChart data={topAsteroids}>
+    <XAxis dataKey="name" hide />
+    <YAxis />
+    <Tooltip />
+    <Bar dataKey="size" />
+  </BarChart>
+</ResponsiveContainer>
