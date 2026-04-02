@@ -77,37 +77,37 @@ exports.getNeoFeed = async () => {
 };
 
 // 🌍 EPIC (Earth images)
-exports.getEpic = async () => {
+exports.getEpic = async (date) => {
   try {
-    // 1️⃣ Get available dates
-    const datesRes = await nasaClient.get("/EPIC/api/natural/all", {
-      params: { api_key: config.nasaApiKey }
-    });
+    let targetDate = date;
 
-    const dates = datesRes.data;
+    // 1️⃣ If no date → get latest available
+    if (!targetDate) {
+      const datesRes = await nasaClient.get("/EPIC/api/natural/all", {
+        params: { api_key: config.nasaApiKey }
+      });
 
-    if (!dates.length) throw new Error("No EPIC dates");
+      const dates = datesRes.data;
 
-    // 2️⃣ Pick latest date
-    const latest = dates[dates.length - 1].date;
+      if (!dates.length) throw new Error("No EPIC dates");
 
-    // 3️⃣ Fetch images for that date
-    const res = await nasaClient.get(`/EPIC/api/natural/date/${latest}`, {
-      params: { api_key: config.nasaApiKey }
-    });
+      targetDate = dates[dates.length - 1].date;
+    }
+
+    // 2️⃣ Fetch images for that date
+    const res = await nasaClient.get(
+      `/EPIC/api/natural/date/${targetDate}`,
+      {
+        params: { api_key: config.nasaApiKey }
+      }
+    );
 
     return res.data;
 
   } catch (err) {
     console.error("EPIC API failed");
 
-    // fallback
-    return [
-      {
-        image: "epic_1b_20230301011328",
-        date: "2023-03-01 01:13:28"
-      }
-    ];
+    return [];
   }
 };
 

@@ -22,8 +22,12 @@ export const getNeo = async () => {
 };
 
 // 🌍 EPIC
-export const getEpic = async () => {
-  const res = await fetch(`${BASE_URL}/epic`);
+export const getEpic = async (date) => {
+  const url = date
+    ? `${BASE_URL}/epic?date=${date}`
+    : `${BASE_URL}/epic`;
+
+  const res = await fetch(url);
   return res.json();
 };
 

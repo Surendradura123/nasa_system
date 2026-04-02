@@ -35,10 +35,13 @@ exports.getNeoFeed = async (req, res) => {
 // Fetch EPIC data
 exports.getEpic = async (req, res) => {
   try {
-    const data = await nasaService.getEpic();
+    const { date } = req.query;
+
+    const data = await nasaService.getEpic(date);
+
     res.json(data);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch EPIC data" });
+    res.status(500).json({ message: "Failed to fetch EPIC" });
   }
 };
 
