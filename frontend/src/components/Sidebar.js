@@ -72,6 +72,26 @@ export default function Sidebar({ close }) {
           ☄️ Asteroids
         </a>
 
+        <a
+          href="#epic"
+          onClick={close}
+          className={`${base} ${
+            active === "epic" ? activeStyle : inactiveStyle
+          }`}
+        >
+          🌍 EPIC
+        </a>
+
+        <a
+          href="#search"
+          onClick={close}
+          className={`${base} ${
+            active === "search" ? activeStyle : inactiveStyle
+          }`}
+        >
+          🔍 Search
+        </a>
+
       </nav>
     </div>
   );
