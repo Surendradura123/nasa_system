@@ -1,57 +1,45 @@
-import { useState } from "react";
-import Navbar from "./components/Navbar";
-import Sidebar from "./components/Sidebar";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 
-import Apod from "./components/Apod";
+import Sidebar from "./components/Sidebar";
+import SpaceBackground from "./components/SpaceBackground";
+
+import Dashboard from "./pages/Dashboard";
 import Mars from "./components/Mars";
-import NeoChart from "./components/NeoChart";
 import Epic from "./components/Epic";
+import NeoChart from "./components/NeoChart";
 import Search from "./components/Search";
 
-export default function App() {
-  const [isOpen, setIsOpen] = useState(false);
+function AppRoutes() {
+  const location = useLocation();
 
   return (
-    <div className="bg-gray-950 text-white min-h-screen">
-
-      {/* Navbar */}
-      <Navbar toggleSidebar={() => setIsOpen(true)} />
-
-      <div className="flex">
-
-        {/* ✅ Desktop Sidebar ONLY */}
-        <div className="hidden md:block">
-          <Sidebar />
-        </div>
-
-        {/* ✅ Mobile Sidebar (toggle works here) */}
-        {isOpen && (
-          <div className="fixed inset-0 z-50 flex">
-
-            {/* Overlay */}
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50"
-              onClick={() => setIsOpen(false)}
-            />
-
-            {/* Sidebar panel */}
-            <div className="relative">
-              <Sidebar close={() => setIsOpen(false)} />
-            </div>
-          </div>
-        )}
-
-        {/* Main */}
-        <main className="flex-1 p-6 space-y-10">
-
-          <section id="apod"><Apod /></section>
-          <section id="mars"><Mars /></section>
-          <section id="neo"><NeoChart /></section>
-          <section id="epic"><Epic /></section>
-          <section id="search"><Search /></section>
-
-        </main>
-      </div>
-    </div>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/mars" element={<Mars />} />
+        <Route path="/epic" element={<Epic />} />
+        <Route path="/neo" element={<NeoChart />} />
+        <Route path="/search" element={<Search />} />
+      </Routes>
+    </AnimatePresence>
   );
 }
+
+function App() {
+  return (
+    <BrowserRouter>
+      <SpaceBackground />
+
+      <div className="flex relative z-10 min-h-screen text-white">
+        <Sidebar />
+        <main className="flex-1 p-6">
+          <AppRoutes />
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+}
+
+export default App;

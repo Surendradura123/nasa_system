@@ -3,84 +3,85 @@ import { getNeo } from "../services/api";
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
   ResponsiveContainer
 } from "recharts";
 
 export default function NeoChart() {
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [showHazardous, setShowHazardous] = useState(false);
 
   useEffect(() => {
-    getNeo()
-      .then(res => {
-        const neoData = res.near_earth_objects || {};
+    const fetchData = async () => {
+      const res = await getNeo();
+      const neo = res.near_earth_objects;
 
-        // 📊 Transform API data → chart format
-        const formatted = Object.keys(neoData).map(date => ({
+      const chartData = Object.keys(neo).map((date) => {
+        const day = neo[date];
+
+        return {
           date,
-          count: neoData[date].length
-        }));
-
-        setData(formatted);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("NEO fetch error:", err);
-        setLoading(false);
+          count: day.length,
+          hazardous: day.filter(
+            (n) => n.is_potentially_hazardous_asteroid
+          ).length
+        };
       });
+
+      setData(chartData);
+    };
+
+    fetchData();
   }, []);
 
-  // 🔄 Loading skeleton
-  if (loading) {
-    return (
-      <div className="bg-gray-900 p-6 rounded-xl shadow-md">
-        <h2 className="text-xl font-semibold mb-4">
-          ☄️ Near Earth Objects
-        </h2>
-
-        <div className="h-64 bg-gray-800 animate-pulse rounded-lg" />
-      </div>
-    );
+  if (!data.length) {
+    return <p className="text-gray-400">No chart data</p>;
   }
 
   return (
-    <div className="bg-gray-900 p-6 rounded-xl shadow-lg">
-      {/* Title */}
-      <h2 className="text-xl font-semibold mb-4">
-        ☄️ Near Earth Objects (Daily Count)
-      </h2>
+    <div className="bg-gray-900 p-6 rounded-2xl space-y-4">
 
-      {/* Empty state */}
-      {data.length === 0 ? (
-        <p className="text-gray-400">
-          No asteroid data available.
-        </p>
-      ) : (
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-            <XAxis dataKey="date" stroke="#aaa" />
-            <YAxis stroke="#aaa" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#111",
-                border: "none"
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="count"
-              stroke="#38bdf8"
-              strokeWidth={3}
-              dot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      )}
+      {/* 🎛 Filter */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">☄️ Asteroid Activity</h2>
+
+        <button
+          onClick={() => setShowHazardous(!showHazardous)}
+          className="bg-blue-500 px-3 py-1 rounded"
+        >
+          {showHazardous ? "Show All" : "Only Hazardous"}
+        </button>
+      </div>
+
+      {/* 📈 Line Chart */}
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart data={data}>
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+
+          <Line
+            dataKey={showHazardous ? "hazardous" : "count"}
+            strokeWidth={2}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* 📊 Bar Chart */}
+      <ResponsiveContainer width="100%" height={250}>
+        <BarChart data={data}>
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+
+          <Bar dataKey="count" />
+        </BarChart>
+      </ResponsiveContainer>
+
     </div>
   );
 }

@@ -1,22 +1,17 @@
-export default function Navbar({ toggleSidebar }) {
+import { NavLink } from "react-router-dom";
+
+export default function Navbar() {
   return (
-    <div className="flex justify-between items-center p-4 bg-gray-900 text-white border-b border-gray-800">
+    <nav className="bg-black text-white p-4 flex justify-between items-center shadow">
 
-      {/* ☰ Hamburger */}
-      <button
-        className="md:hidden text-2xl"
-        onClick={() => {
-          if (toggleSidebar) toggleSidebar();
-        }}
-      >
-        ☰
-      </button>
+      <h1 className="font-bold text-lg">🚀 NASA SaaS</h1>
 
-      <h1 className="text-lg font-bold">🚀 Space SaaS</h1>
+      <div className="space-x-6">
+        <NavLink to="/" className="hover:text-blue-400">
+          Dashboard
+        </NavLink>
+      </div>
 
-      <button className="bg-blue-500 px-3 py-1 rounded-lg">
-        Refresh
-      </button>
-    </div>
+    </nav>
   );
 }

@@ -34,7 +34,7 @@ export default function Search() {
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {results.slice(0, 6).map((item, i) => {
+        {results.slice(0, 20).map((item, i) => {
           const img = item.links?.[0]?.href;
 
           return (

@@ -35,6 +35,9 @@ export default function Apod() {
 
   return (
     <div className="bg-gray-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition">
+      <h2 className="text-2xl font-bold mb-4">
+          🌅 Astronomy Picture of the Day
+      </h2>
       <img
         src={data.url}
         alt={data.title}

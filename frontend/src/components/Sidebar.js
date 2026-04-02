@@ -1,98 +1,77 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import { motion } from "framer-motion";
 
-export default function Sidebar({ close }) {
-  const [active, setActive] = useState("apod");
-
-  useEffect(() => {
-    const sections = ["apod", "mars", "neo"];
-
-    const handleScroll = () => {
-      let current = "apod";
-
-      sections.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          const offset = el.offsetTop - 120;
-          if (window.scrollY >= offset) {
-            current = id;
-          }
-        }
-      });
-
-      setActive(current);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // ✅ Tailwind classes for active vs inactive
-  const base =
-    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200";
-
-  const activeStyle =
-    "bg-blue-500 text-white shadow-md";
-
-  const inactiveStyle =
-    "text-gray-400 hover:bg-gray-800 hover:text-white";
+export default function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="w-64 bg-gray-900 p-6 h-full">
-      <h2 className="text-xl font-bold mb-8">Menu</h2>
+    <motion.div
+      animate={{ width: collapsed ? 80 : 260 }}
+      className="h-screen bg-gradient-to-b from-gray-900 to-black text-white p-4 hidden md:flex flex-col shadow-xl backdrop-blur-xl"
+    >
+      {/* 🔝 Top */}
+      <div className="flex justify-between items-center mb-8">
+        {!collapsed && (
+          <h1 className="text-xl font-bold tracking-wide">🚀 NASA</h1>
+        )}
 
-      <nav className="space-y-2">
-
-        <a
-          href="#apod"
-          onClick={close}
-          className={`${base} ${
-            active === "apod" ? activeStyle : inactiveStyle
-          }`}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="text-gray-400 hover:text-white"
         >
-          🌌 APOD
-        </a>
+          {collapsed ? "➤" : "◀"}
+        </button>
+      </div>
 
-        <a
-          href="#mars"
-          onClick={close}
-          className={`${base} ${
-            active === "mars" ? activeStyle : inactiveStyle
-          }`}
-        >
-          🚀 Mars
-        </a>
+      {/* 🧭 Nav */}
+      <nav className="space-y-3 flex-1">
 
-        <a
-          href="#neo"
-          onClick={close}
-          className={`${base} ${
-            active === "neo" ? activeStyle : inactiveStyle
-          }`}
-        >
-          ☄️ Asteroids
-        </a>
-
-        <a
-          href="#epic"
-          onClick={close}
-          className={`${base} ${
-            active === "epic" ? activeStyle : inactiveStyle
-          }`}
-        >
-          🌍 EPIC
-        </a>
-
-        <a
-          href="#search"
-          onClick={close}
-          className={`${base} ${
-            active === "search" ? activeStyle : inactiveStyle
-          }`}
-        >
-          🔍 Search
-        </a>
+        <NavItem to="/" label="Dashboard" icon="📊" collapsed={collapsed} />
+        <NavItem to="/mars" label="Mars" icon="🚗" collapsed={collapsed} />
+        <NavItem to="/epic" label="EPIC" icon="🌍" collapsed={collapsed} />
+        <NavItem to="/neo" label="Asteroids" icon="☄️" collapsed={collapsed} />
+        <NavItem to="/search" label="Search" icon="🔍" collapsed={collapsed} />
 
       </nav>
-    </div>
+
+      {/* ⚡ Footer */}
+      {!collapsed && (
+        <div className="text-xs text-gray-500 mt-6">
+          NASA Dashboard v1.0
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function NavItem({ to, label, icon, collapsed }) {
+  return (
+    <NavLink to={to}>
+      {({ isActive }) => (
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className={`flex items-center gap-3 p-3 rounded-xl transition relative
+            ${
+              isActive
+                ? "bg-blue-500/20 text-blue-400"
+                : "text-gray-400 hover:bg-gray-800"
+            }
+          `}
+        >
+          {/* 🔵 Active indicator */}
+          {isActive && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"
+            />
+          )}
+
+          <span className="text-lg">{icon}</span>
+
+          {!collapsed && <span>{label}</span>}
+        </motion.div>
+      )}
+    </NavLink>
   );
 }
