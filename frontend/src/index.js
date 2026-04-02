@@ -15,3 +15,10 @@ root.render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+// Suppress specific warning from three.js used by @react-three/fiber
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  if (args[0]?.includes("THREE.Clock")) return;
+  originalWarn(...args);
+};
