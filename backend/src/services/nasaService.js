@@ -79,6 +79,7 @@ exports.getNeoFeed = async () => {
 // 🌍 EPIC (Earth images)
 exports.getEpic = async () => {
   try {
+    // 🔥 Try latest data
     const res = await nasaClient.get("/EPIC/api/natural");
 
     if (res.data && res.data.length > 0) {
@@ -87,19 +88,34 @@ exports.getEpic = async () => {
 
     throw new Error("No EPIC data");
   } catch (err) {
-    console.error("EPIC API failed");
+    console.error("EPIC latest failed, trying previous dates...");
 
-    // 🔥 FALLBACK (latest known sample)
-    return [
-      {
-        identifier: "fallback",
-        caption: "Latest available EPIC image (fallback)",
-        image: "epic_1b_20260331003634",
-        date: "2026-03-31 00:36:34",
-      },
-    ];
+    // 🔁 Try last 5 days dynamically
+    for (let i = 1; i <= 5; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+
+      const formatted = date.toISOString().split("T")[0];
+
+      try {
+        const fallbackRes = await nasaClient.get(
+          `/EPIC/api/natural/date/${formatted}`
+        );
+
+        if (fallbackRes.data && fallbackRes.data.length > 0) {
+          console.log("Using fallback date:", formatted);
+          return fallbackRes.data;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+
+    // ❌ If nothing works
+    return [];
   }
 };
+
 
 // 🔍 NASA Image & Video Library (Search)
 exports.searchImages = async (query = "space") => {
