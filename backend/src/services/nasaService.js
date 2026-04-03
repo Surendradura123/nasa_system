@@ -26,33 +26,55 @@ exports.getApod = async () => {
 };
 
 // 🚀 Mars Rover Photos
+let marsFailed = false;
+
 exports.getMarsPhotos = async () => {
+  const endpoint = "/mars-photos/api/v1/rovers/curiosity/photos";
+
   try {
-    const res = await nasaClient.get(
-      "/mars-photos/api/v1/rovers/curiosity/photos",
-      {
-        params: {
-          sol: 1000,
-          api_key: config.nasaApiKey,
-        },
+    // 🔁 Retry logic (2 attempts)
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const res = await nasaClient.get(endpoint, {
+          params: {
+            sol: 1000,
+            api_key: config.nasaApiKey,
+          },
+        });
+
+        // ✅ Validate response
+        if (res.data && Array.isArray(res.data.photos)) {
+          return res.data;
+        }
+
+        throw new Error("Invalid Mars API response");
+      } catch (err) {
+        if (attempt === 2) throw err;
       }
-    );
-
-    return res.data;
+    }
   } catch (err) {
-    console.error("Mars API failed, using fallback");
+    // 🔥 Log only once
+    if (!marsFailed) {
+      console.error("🚨 Mars API failed → using fallback");
+      marsFailed = true;
+    }
 
+    // ✅ CLEAN FALLBACK DATA
     return {
       photos: [
         {
           id: 1,
           img_src:
             "https://mars.nasa.gov/system/resources/detail_files/25667_PIA23764-16.jpg",
+          earth_date: "Fallback",
+          rover: { name: "Curiosity" },
         },
         {
           id: 2,
           img_src:
             "https://mars.nasa.gov/system/resources/detail_files/25668_PIA23764-32.jpg",
+          earth_date: "Fallback",
+          rover: { name: "Curiosity" },
         },
       ],
     };
