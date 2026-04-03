@@ -4,6 +4,7 @@ import { getEpic } from "../services/api";
 
 export default function Epic() {
   const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchEpic();
@@ -14,61 +15,83 @@ export default function Epic() {
       const data = await getEpic();
       setImages(data || []);
     } catch (err) {
-      console.error("EPIC error", err);
+      console.error("EPIC error:", err);
       setImages([]);
+    } finally {
+      setLoading(false);
     }
   };
+
+  // 🔥 LOADING STATE
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-gray-400">
+        Loading EPIC images...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
 
       {/* 🔥 TITLE */}
-      <h1 className="text-2xl font-bold">🌍 EPIC Earth Images</h1>
+      <h1 className="text-2xl font-bold">🌍 Earth from Space (EPIC)</h1>
 
-      {/* ❌ EMPTY STATE */}
+      {/* ❌ NO DATA */}
       {images.length === 0 && (
         <div className="text-center text-gray-400">
-          No EPIC data available
+          No EPIC data available from NASA
         </div>
       )}
 
-      {/* ✅ IMAGES */}
+      {/* ✅ GRID */}
       <div className="grid md:grid-cols-3 gap-6">
 
         {images.map((img, index) => {
-          const dateParts = img.date?.split(" ")[0].split("-");
-          const time = img.date?.split(" ")[1];
+          // 🛡 SAFE DATE PARSING
+          let dateParts = ["unknown", "unknown", "unknown"];
+          let time = "unknown";
 
-          const imageUrl =
-            img.identifier === "fallback"
-              ? `https://epic.gsfc.nasa.gov/archive/natural/${dateParts[0]}/${dateParts[1]}/${dateParts[2]}/jpg/${img.image}.jpg`
-              : `https://epic.gsfc.nasa.gov/archive/natural/${dateParts[0]}/${dateParts[1]}/${dateParts[2]}/jpg/${img.image}.jpg`;
+          if (img.date) {
+            const [dateStr, timeStr] = img.date.split(" ");
+            if (dateStr) dateParts = dateStr.split("-");
+            if (timeStr) time = timeStr;
+          }
+
+          const [year, month, day] = dateParts;
+
+          const imageUrl = `https://epic.gsfc.nasa.gov/archive/natural/${year}/${month}/${day}/jpg/${img.image}.jpg`;
 
           return (
             <motion.div
               key={index}
               whileHover={{ scale: 1.05 }}
-              className="bg-gray-900 rounded-xl overflow-hidden shadow-lg"
+              className="bg-gray-900 rounded-xl overflow-hidden shadow-lg hover:shadow-indigo-500/20 transition"
             >
+              {/* 🌍 IMAGE */}
               <img
                 src={imageUrl}
                 alt="Earth"
                 className="w-full h-64 object-cover"
+                onError={(e) => {
+                  e.target.src =
+                    "https://via.placeholder.com/400x300?text=No+Image";
+                }}
               />
 
-              <div className="p-4">
+              {/* 📊 INFO */}
+              <div className="p-4 space-y-1">
                 <p className="text-sm text-gray-400">
-                  📅 {dateParts.join("-")}
+                  📅 {year}-{month}-{day}
                 </p>
+
                 <p className="text-sm text-gray-400">
                   ⏰ {time}
                 </p>
 
-                {img.identifier === "fallback" && (
-                  <p className="text-xs text-yellow-400 mt-2">
-                    Showing last available data
-                  </p>
-                )}
+                <p className="text-xs text-indigo-400 mt-2">
+                  Latest available NASA data
+                </p>
               </div>
             </motion.div>
           );
