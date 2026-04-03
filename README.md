@@ -118,7 +118,8 @@ This app follows **modern SaaS design patterns**:
 
 ### Testing
 
-* **Jest + Supertest** → API testing & coverage
+* **Jest + Supertest** → API testing & coverage 
+* **POSTMAN
 
 ---
 
