@@ -1,45 +1,59 @@
-import { useEffect, useState, useCallback } from "react";
-import { getNeo } from "../services/api";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { motion } from "framer-motion";
+import Slider from "rc-slider";
+import "rc-slider/assets/index.css";
+
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Scatter,
 } from "recharts";
+
+import { getNeo } from "../services/api";
 
 export default function Neo() {
   const [rawData, setRawData] = useState({});
   const [filteredData, setFilteredData] = useState([]);
   const [dates, setDates] = useState([]);
-  const [range, setRange] = useState([0, 4]);
+  const [range, setRange] = useState([0, 5]);
   const [hazardOnly, setHazardOnly] = useState(false);
-  const [selectedAsteroid, setSelectedAsteroid] = useState(null);
+
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedAsteroids, setSelectedAsteroids] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
+  const detailsRef = useRef(null);
 
   // 🚀 Fetch data
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchNeo = async () => {
       try {
-        const data = await getNeo();
-        const neo = data.near_earth_objects || {};
+        const res = await getNeo();
+        const neo = res.near_earth_objects || {};
 
+        const sortedDates = Object.keys(neo).sort(
+          (a, b) => new Date(a) - new Date(b)
+        );
+
+        setDates(sortedDates);
         setRawData(neo);
-        setDates(Object.keys(neo));
+        setRange([0, sortedDates.length - 1]);
       } catch (err) {
-        console.error("Failed to fetch NEO");
+        console.error("Neo fetch failed", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchNeo();
   }, []);
 
-  // 🔥 Apply filters (FIXED with useCallback)
+  // 🔥 Filters (CI-safe)
   const applyFilters = useCallback(() => {
     if (!dates.length) return;
 
@@ -62,28 +76,20 @@ export default function Neo() {
         date,
         count: asteroids.length,
         hazardous: hazardousCount,
-        asteroids: asteroids,
       };
     });
 
     setFilteredData(formatted);
   }, [dates, range, rawData, hazardOnly]);
 
-  // ✅ Safe useEffect
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
 
-  // 🔥 Handle bar click
-  const handleBarClick = (data) => {
-    if (data?.activePayload?.[0]?.payload) {
-      const asteroids = data.activePayload[0].payload.asteroids;
-      setSelectedAsteroid(asteroids[0] || null);
-    }
-  };
+  const total = filteredData.reduce((sum, d) => sum + d.count, 0);
 
   if (loading) {
-    return <div className="text-gray-400">Loading asteroid data...</div>;
+    return <p className="text-gray-400">Loading asteroid data...</p>;
   }
 
   return (
@@ -91,91 +97,211 @@ export default function Neo() {
       {/* 🔥 Title */}
       <h1 className="text-2xl font-bold">☄️ Asteroid Analytics</h1>
 
-      {/* 🎛️ Filters */}
-      <div className="flex flex-wrap gap-4 items-center">
-        <label className="text-sm text-gray-400">
-          Date Range:
-          <input
-            type="range"
-            min="0"
+      {/* 🎛 Filters */}
+      <div className="bg-gray-900 p-6 rounded-xl space-y-4 shadow-lg">
+        <div>
+          <p className="text-sm text-gray-400 mb-2">Date Range</p>
+
+          <Slider
+            range
+            min={0}
             max={dates.length - 1}
-            value={range[1]}
-            onChange={(e) => setRange([0, Number(e.target.value)])}
-            className="ml-2"
+            value={range}
+            onChange={setRange}
           />
-        </label>
+
+          <div className="flex justify-between text-xs text-gray-400 mt-2">
+            <span>{dates[range[0]]}</span>
+            <span>{dates[range[1]]}</span>
+          </div>
+        </div>
 
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={hazardOnly}
-            onChange={(e) => setHazardOnly(e.target.checked)}
+            onChange={() => setHazardOnly(!hazardOnly)}
           />
-          Hazardous only
+          Hazardous Only
         </label>
       </div>
 
-      {/* 📊 Chart */}
-      <div className="bg-gray-900 p-4 rounded-xl shadow">
+      {/* 📊 Total */}
+      <motion.div className="bg-gray-900 p-6 rounded-xl shadow-lg">
+        <h2 className="text-lg mb-2">Total Asteroids</h2>
+        <p className="text-3xl font-bold">{total}</p>
+      </motion.div>
+
+      {/* 📈 Chart */}
+      <motion.div className="bg-gray-900 p-6 rounded-xl shadow-lg">
+        <h2 className="text-lg mb-4">Asteroid Trends</h2>
+
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={filteredData} onClick={handleBarClick}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
+          <LineChart
+            data={filteredData}
+            onClick={(e) => {
+              if (!e || !e.activeLabel) return;
 
-            {/* Total asteroids */}
-            <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} />
+              const date = e.activeLabel;
+              let asteroids = rawData[date] || [];
 
-            {/* 🔴 Hazard dots */}
-            <Scatter
-              data={filteredData.map((d) => ({
-                date: d.date,
-                hazardous: d.hazardous,
-              }))}
-              fill="red"
+              if (hazardOnly) {
+                asteroids = asteroids.filter(
+                  (a) => a.is_potentially_hazardous_asteroid
+                );
+              }
+
+              setSelectedDate(date);
+              setSelectedAsteroids(asteroids);
+
+              // 🔥 Smooth scroll
+              setTimeout(() => {
+                detailsRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                });
+              }, 100);
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey="date" stroke="#9CA3AF" />
+            <YAxis stroke="#9CA3AF" />
+            <Tooltip content={<CustomTooltip />} />
+
+            {/* 🟣 Total */}
+            <Line
+              type="monotone"
+              dataKey="count"
+              stroke="#6366f1"
+              strokeWidth={3}
+              name="Total"
+              dot={(props) => {
+                const { cx, cy, payload } = props;
+                const isSelected = payload.date === selectedDate;
+
+                return (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={isSelected ? 8 : 4}
+                    fill={isSelected ? "#22c55e" : "#6366f1"}
+                    style={{
+                      filter: isSelected
+                        ? "drop-shadow(0 0 8px #22c55e)"
+                        : "none",
+                    }}
+                  />
+                );
+              }}
             />
-          </BarChart>
+
+            {/* 🔴 Hazard */}
+            <Line
+              type="monotone"
+              dataKey="hazardous"
+              stroke="#ef4444"
+              strokeWidth={3}
+              name="Hazardous"
+              dot={{ r: 4 }}
+            />
+          </LineChart>
         </ResponsiveContainer>
-      </div>
+      </motion.div>
 
-      {/* 📋 Selected asteroid details */}
-      {selectedAsteroid && (
-        <div className="bg-gray-900 p-4 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-2">
-            🚀 Asteroid Details
-          </h2>
+      {/* 🔥 DETAILS PANEL */}
+      {selectedDate && (
+        <motion.div
+          ref={detailsRef}
+          initial={{ opacity: 0, y: 60 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800"
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">
+              🚀 Asteroids on{" "}
+              <span className="text-green-400">{selectedDate}</span>
+            </h2>
 
-          <p>
-            <strong>Name:</strong> {selectedAsteroid.name}
-          </p>
+            <button
+              onClick={() => setSelectedDate(null)}
+              className="text-gray-400 hover:text-white"
+            >
+              ✖
+            </button>
+          </div>
 
-          <p>
-            <strong>Hazardous:</strong>{" "}
-            {selectedAsteroid.is_potentially_hazardous_asteroid
-              ? "Yes 🚨"
-              : "No"}
-          </p>
+          {selectedAsteroids.length === 0 ? (
+            <p className="text-gray-400">No data available</p>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {selectedAsteroids.slice(0, 8).map((a) => (
+                <motion.div
+                  key={a.id}
+                  whileHover={{ scale: 1.03 }}
+                  className="bg-gray-800 p-4 rounded-lg border border-gray-700"
+                >
+                  <p className="font-semibold">{a.name}</p>
 
-          <p>
-            <strong>Velocity:</strong>{" "}
-            {
-              selectedAsteroid.close_approach_data?.[0]
-                ?.relative_velocity?.kilometers_per_hour
-            }{" "}
-            km/h
-          </p>
+                  <p className="text-sm text-gray-400">
+                    Diameter:{" "}
+                    {Math.round(
+                      a?.estimated_diameter?.meters
+                        ?.estimated_diameter_max || 0
+                    )}{" "}
+                    m
+                  </p>
 
-          <p>
-            <strong>Miss Distance:</strong>{" "}
-            {
-              selectedAsteroid.close_approach_data?.[0]
-                ?.miss_distance?.kilometers
-            }{" "}
-            km
-          </p>
-        </div>
+                  <p className="text-sm text-gray-400">
+                    Speed:{" "}
+                    {Math.round(
+                      a?.close_approach_data?.[0]?.relative_velocity
+                        ?.kilometers_per_hour || 0
+                    )}{" "}
+                    km/h
+                  </p>
+
+                  <p
+                    className={`text-sm ${
+                      a.is_potentially_hazardous_asteroid
+                        ? "text-red-400"
+                        : "text-green-400"
+                    }`}
+                  >
+                    {a.is_potentially_hazardous_asteroid
+                      ? "⚠ Hazardous"
+                      : "Safe"}
+                  </p>
+
+                  <a
+                    href={a.nasa_jpl_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block px-3 py-1 bg-blue-600 hover:bg-blue-700 text-xs rounded-lg"
+                  >
+                    View on NASA →
+                  </a>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
       )}
+    </div>
+  );
+}
+
+/* 🔥 Tooltip */
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+
+  const total = payload.find((p) => p.name === "Total")?.value;
+  const hazard = payload.find((p) => p.name === "Hazardous")?.value;
+
+  return (
+    <div className="bg-gray-900 border border-gray-700 p-4 rounded-xl shadow-xl">
+      <p className="text-sm text-gray-400">{label}</p>
+      <p className="text-indigo-400 font-bold">🟣 {total} total</p>
+      <p className="text-red-400 font-bold">🔴 {hazard} hazardous</p>
     </div>
   );
 }
