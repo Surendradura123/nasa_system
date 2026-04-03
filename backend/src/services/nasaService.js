@@ -1,5 +1,6 @@
 const axios = require("axios");
 const config = require("../config/config");
+const { getCache, setCache } = require("../utils/cache");
 
 // axios instance
 const nasaClient = axios.create({
@@ -29,57 +30,50 @@ exports.getApod = async () => {
 let marsFailed = false;
 
 exports.getMarsPhotos = async () => {
-  const endpoint = "/mars-photos/api/v1/rovers/curiosity/photos";
+  const cacheKey = "mars_photos";
+
+  // ✅ Return cached data
+  const cached = getCache(cacheKey);
+  if (cached) {
+    console.log("⚡ Mars cache hit");
+    return cached;
+  }
 
   try {
-    // 🔁 Retry logic (2 attempts)
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const res = await nasaClient.get(endpoint, {
-          params: {
-            sol: 1000,
-            api_key: config.nasaApiKey,
-          },
-        });
-
-        // ✅ Validate response
-        if (res.data && Array.isArray(res.data.photos)) {
-          return res.data;
-        }
-
-        throw new Error("Invalid Mars API response");
-      } catch (err) {
-        if (attempt === 2) throw err;
+    const res = await nasaClient.get(
+      "/mars-photos/api/v1/rovers/curiosity/photos",
+      {
+        params: {
+          sol: 1000,
+          api_key: config.nasaApiKey,
+        },
       }
+    );
+
+    if (res.data?.photos) {
+      setCache(cacheKey, res.data, 5 * 60 * 1000); // 5 min cache
+      return res.data;
     }
+
+    throw new Error("Invalid Mars data");
   } catch (err) {
-    // 🔥 Log only once
     if (!marsFailed) {
       console.error("🚨 Mars API failed → using fallback");
       marsFailed = true;
     }
 
-    // ✅ CLEAN FALLBACK DATA
     return {
       photos: [
         {
           id: 1,
           img_src:
             "https://mars.nasa.gov/system/resources/detail_files/25667_PIA23764-16.jpg",
-          earth_date: "Fallback",
-          rover: { name: "Curiosity" },
-        },
-        {
-          id: 2,
-          img_src:
-            "https://mars.nasa.gov/system/resources/detail_files/25668_PIA23764-32.jpg",
-          earth_date: "Fallback",
-          rover: { name: "Curiosity" },
         },
       ],
     };
   }
 };
+
 
 // ☄️ Near Earth Objects (NeoWs)
 exports.getNeoFeed = async () => {
@@ -99,20 +93,36 @@ exports.getNeoFeed = async () => {
 };
 
 // 🌍 EPIC (Earth images)
+const { getCache, setCache } = require("../utils/cache");
+
+let epicFailed = false;
+
 exports.getEpic = async () => {
+  const cacheKey = "epic_images";
+
+  // ✅ Cache check
+  const cached = getCache(cacheKey);
+  if (cached) {
+    console.log("⚡ EPIC cache hit");
+    return cached;
+  }
+
   try {
-    // 🔥 Try latest data
     const res = await nasaClient.get("/EPIC/api/natural");
 
-    if (res.data && res.data.length > 0) {
+    if (res.data?.length > 0) {
+      setCache(cacheKey, res.data, 10 * 60 * 1000); // 10 min cache
       return res.data;
     }
 
     throw new Error("No EPIC data");
   } catch (err) {
-    console.error("EPIC latest failed, trying previous dates...");
+    if (!epicFailed) {
+      console.error("🚨 EPIC failed → trying fallback dates");
+      epicFailed = true;
+    }
 
-    // 🔁 Try last 5 days dynamically
+    // 🔁 Try last 5 days
     for (let i = 1; i <= 5; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
@@ -124,8 +134,8 @@ exports.getEpic = async () => {
           `/EPIC/api/natural/date/${formatted}`
         );
 
-        if (fallbackRes.data && fallbackRes.data.length > 0) {
-          console.log("Using fallback date:", formatted);
+        if (fallbackRes.data?.length > 0) {
+          setCache(cacheKey, fallbackRes.data, 10 * 60 * 1000);
           return fallbackRes.data;
         }
       } catch (e) {
@@ -133,7 +143,6 @@ exports.getEpic = async () => {
       }
     }
 
-    // ❌ If nothing works
     return [];
   }
 };
