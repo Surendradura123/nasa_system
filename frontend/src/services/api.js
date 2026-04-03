@@ -2,7 +2,7 @@ const BASE_URL =
   process.env.REACT_APP_API_URL ||
   "https://nasa-system-backend.onrender.com/api";
 
-// 🔥 Generic safe fetch
+// 🔥 Safe fetch helper
 async function fetchJSON(url) {
   try {
     const res = await fetch(url);
@@ -27,7 +27,9 @@ async function fetchJSON(url) {
   }
 }
 
+//
 // 🌌 APOD
+//
 export const getApod = async () => {
   try {
     return await fetchJSON(`${BASE_URL}/apod`);
@@ -40,7 +42,9 @@ export const getApod = async () => {
   }
 };
 
+//
 // 🚀 Mars
+//
 export const getMars = async () => {
   try {
     const data = await fetchJSON(`${BASE_URL}/mars`);
@@ -62,7 +66,9 @@ export const getMars = async () => {
   }
 };
 
+//
 // 🌍 EPIC
+//
 export const getEpic = async () => {
   try {
     const data = await fetchJSON(`${BASE_URL}/epic`);
@@ -72,7 +78,9 @@ export const getEpic = async () => {
   }
 };
 
+//
 // ☄️ NEO
+//
 export const getNeo = async () => {
   try {
     return await fetchJSON(`${BASE_URL}/neo`);
@@ -81,7 +89,9 @@ export const getNeo = async () => {
   }
 };
 
+//
 // 🔍 Search
+//
 export const searchImages = async (query = "space") => {
   try {
     const data = await fetchJSON(
