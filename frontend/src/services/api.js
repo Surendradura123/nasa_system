@@ -1,4 +1,7 @@
-const BASE_URL ="https://nasa-system-backend.onrender.com/api";
+const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://nasa-system-backend.onrender.com/api"
+    : "http://localhost:5001/api";
 
 // 🔥 Safe fetch helper
 async function fetchJSON(url) {
