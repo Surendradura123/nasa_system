@@ -93,8 +93,6 @@ exports.getNeoFeed = async () => {
 };
 
 // 🌍 EPIC (Earth images)
-const { getCache, setCache } = require("../utils/cache");
-
 let epicFailed = false;
 
 exports.getEpic = async () => {
