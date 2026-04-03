@@ -2,20 +2,40 @@ const axios = require("axios");
 const config = require("../config/config");
 const { getCache, setCache } = require("../utils/cache");
 
-// axios instance
+// 🔥 Axios instance with timeout
 const nasaClient = axios.create({
   baseURL: config.nasaBaseUrl,
+  timeout: 5000, // 5s timeout
 });
 
-// 🌌 APOD
-exports.getApod = async () => {
-  try {
-    const res = await nasaClient.get("/planetary/apod", {
-      params: { api_key: config.nasaApiKey },
-    });
+// 🔁 Generic retry helper
+async function fetchWithRetry(fn, retries = 2) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === retries - 1) throw err;
+    }
+  }
+}
 
+// 🌌 APOD (with cache)
+exports.getApod = async () => {
+  const cacheKey = "apod";
+
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const res = await fetchWithRetry(() =>
+      nasaClient.get("/planetary/apod", {
+        params: { api_key: config.nasaApiKey },
+      })
+    );
+
+    setCache(cacheKey, res.data, 60 * 60 * 1000); // 1 hour
     return res.data;
-  } catch (err) {
+  } catch {
     console.error("APOD API failed");
 
     return {
@@ -26,13 +46,12 @@ exports.getApod = async () => {
   }
 };
 
-// 🚀 Mars Rover Photos
+// 🚀 Mars
 let marsFailed = false;
 
 exports.getMarsPhotos = async () => {
   const cacheKey = "mars_photos";
 
-  // ✅ Return cached data
   const cached = getCache(cacheKey);
   if (cached) {
     console.log("⚡ Mars cache hit");
@@ -40,25 +59,24 @@ exports.getMarsPhotos = async () => {
   }
 
   try {
-    const res = await nasaClient.get(
-      "/mars-photos/api/v1/rovers/curiosity/photos",
-      {
+    const res = await fetchWithRetry(() =>
+      nasaClient.get("/mars-photos/api/v1/rovers/curiosity/photos", {
         params: {
           sol: 1000,
           api_key: config.nasaApiKey,
         },
-      }
+      })
     );
 
     if (res.data?.photos) {
-      setCache(cacheKey, res.data, 5 * 60 * 1000); // 5 min cache
+      setCache(cacheKey, res.data, 5 * 60 * 1000);
       return res.data;
     }
 
     throw new Error("Invalid Mars data");
-  } catch (err) {
+  } catch {
     if (!marsFailed) {
-      console.error("🚨 Mars API failed → using fallback");
+      console.error("🚨 Mars API failed → fallback");
       marsFailed = true;
     }
 
@@ -68,37 +86,43 @@ exports.getMarsPhotos = async () => {
           id: 1,
           img_src:
             "https://mars.nasa.gov/system/resources/detail_files/25667_PIA23764-16.jpg",
+          earth_date: "Fallback",
+          rover: { name: "Curiosity" },
         },
       ],
     };
   }
 };
 
-
-// ☄️ Near Earth Objects (NeoWs)
+// ☄️ NEO (with cache)
 exports.getNeoFeed = async () => {
-  try {
-    const res = await nasaClient.get("/neo/rest/v1/feed", {
-      params: { api_key: config.nasaApiKey },
-    });
+  const cacheKey = "neo_feed";
 
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const res = await fetchWithRetry(() =>
+      nasaClient.get("/neo/rest/v1/feed", {
+        params: { api_key: config.nasaApiKey },
+      })
+    );
+
+    setCache(cacheKey, res.data, 10 * 60 * 1000);
     return res.data;
-  } catch (err) {
+  } catch {
     console.error("NEO API failed");
 
-    return {
-      near_earth_objects: {},
-    };
+    return { near_earth_objects: {} };
   }
 };
 
-// 🌍 EPIC (Earth images)
+// 🌍 EPIC
 let epicFailed = false;
 
 exports.getEpic = async () => {
   const cacheKey = "epic_images";
 
-  // ✅ Cache check
   const cached = getCache(cacheKey);
   if (cached) {
     console.log("⚡ EPIC cache hit");
@@ -106,21 +130,23 @@ exports.getEpic = async () => {
   }
 
   try {
-    const res = await nasaClient.get("/EPIC/api/natural");
+    const res = await fetchWithRetry(() =>
+      nasaClient.get("/EPIC/api/natural")
+    );
 
     if (res.data?.length > 0) {
-      setCache(cacheKey, res.data, 10 * 60 * 1000); // 10 min cache
+      setCache(cacheKey, res.data, 10 * 60 * 1000);
       return res.data;
     }
 
     throw new Error("No EPIC data");
-  } catch (err) {
+  } catch {
     if (!epicFailed) {
-      console.error("🚨 EPIC failed → trying fallback dates");
+      console.error("🚨 EPIC fallback logic triggered");
       epicFailed = true;
     }
 
-    // 🔁 Try last 5 days
+    // 🔁 fallback last 5 days
     for (let i = 1; i <= 5; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
@@ -128,45 +154,38 @@ exports.getEpic = async () => {
       const formatted = date.toISOString().split("T")[0];
 
       try {
-        const fallbackRes = await nasaClient.get(
+        const res = await nasaClient.get(
           `/EPIC/api/natural/date/${formatted}`
         );
 
-        if (fallbackRes.data?.length > 0) {
-          setCache(cacheKey, fallbackRes.data, 10 * 60 * 1000);
-          return fallbackRes.data;
+        if (res.data?.length > 0) {
+          setCache(cacheKey, res.data, 10 * 60 * 1000);
+          return res.data;
         }
-      } catch (e) {
-        continue;
-      }
+      } catch {}
     }
 
     return [];
   }
 };
 
-
-// 🔍 NASA Image & Video Library (Search)
+// 🔍 Search
 exports.searchImages = async (query = "space") => {
   try {
-    const res = await axios.get(
-      "https://images-api.nasa.gov/search",
-      {
+    const res = await fetchWithRetry(() =>
+      axios.get("https://images-api.nasa.gov/search", {
         params: { q: query },
-      }
+      })
     );
 
     return res.data;
-  } catch (err) {
+  } catch {
     console.error("Search API failed");
 
     return {
-      collection: {
-        items: [],
-      },
+      collection: { items: [] },
     };
   }
 };
 
-// Log service initialization
-console.log("NASA Service initialized");
+console.log("🚀 NASA Service initialized (optimized)");
