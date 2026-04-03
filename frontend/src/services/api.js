@@ -1,6 +1,4 @@
-const BASE_URL =
-  process.env.REACT_APP_API_URL ||
-  "https://nasa-system-backend.onrender.com/api";
+const BASE_URL ="https://nasa-system-backend.onrender.com/api";
 
 // 🔥 Safe fetch helper
 async function fetchJSON(url) {
