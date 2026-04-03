@@ -54,13 +54,25 @@ export default function Mars() {
             onClick={() => setSelected(photo)}
             className="bg-gray-900 rounded-xl overflow-hidden shadow-lg cursor-pointer"
           >
-            <img
-              src={photo.img_src}
-              alt="Mars"
-              className="w-full h-64 object-cover"
-            />
+            {/* 🖼 Image with fallback */}
+            <div className="relative w-full h-64 bg-gray-800 flex items-center justify-center">
+              
+              {/* Fallback */}
+              <div className="absolute text-gray-400 text-center">
+                <span className="text-3xl">🛰️</span>
+                <p className="text-sm">No Image Available</p>
+              </div>
 
-            <div className="p-4">
+              <img
+                src={photo.img_src}
+                alt="Mars"
+                className="w-full h-full object-cover"
+                onError={(e) => (e.target.style.display = "none")}
+              />
+            </div>
+
+            {/* 📊 Info */}
+            <div className="p-4 space-y-1">
               <p className="text-sm text-gray-400">
                 📅 {photo.earth_date || "Unknown"}
               </p>
@@ -68,6 +80,12 @@ export default function Mars() {
               <p className="text-sm text-gray-400">
                 🚗 {photo.rover?.name || "Curiosity"}
               </p>
+
+              {photo.earth_date === "Fallback" && (
+                <p className="text-xs text-yellow-400 mt-1">
+                  Showing fallback data
+                </p>
+              )}
             </div>
           </motion.div>
         ))}
@@ -98,16 +116,23 @@ export default function Mars() {
                 ✕ Close
               </button>
 
-              {/* Image */}
-              <motion.img
-                src={selected.img_src}
-                alt="Mars"
-                className="w-full rounded-xl"
-                whileHover={{ scale: 1.05 }} // 🔍 zoom effect
-              />
+              {/* Image with fallback */}
+              <div className="relative bg-gray-800 rounded-xl flex items-center justify-center">
+                <div className="absolute text-gray-400 text-center">
+                  🛰️ No Image Available
+                </div>
+
+                <motion.img
+                  src={selected.img_src}
+                  alt="Mars"
+                  className="w-full rounded-xl"
+                  whileHover={{ scale: 1.05 }}
+                  onError={(e) => (e.target.style.display = "none")}
+                />
+              </div>
 
               {/* Info */}
-              <div className="mt-4 text-gray-300">
+              <div className="mt-4 text-gray-300 space-y-1">
                 <p>📅 {selected.earth_date}</p>
                 <p>🚗 {selected.rover?.name}</p>
                 <p>📷 Camera: {selected.camera?.full_name}</p>
