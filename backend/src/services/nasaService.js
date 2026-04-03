@@ -2,13 +2,13 @@ const axios = require("axios");
 const config = require("../config/config");
 const { getCache, setCache } = require("../utils/cache");
 
-// 🔥 Axios instance with timeout
+// 🔥 Axios instance (with timeout)
 const nasaClient = axios.create({
   baseURL: config.nasaBaseUrl,
-  timeout: 5000, // 5s timeout
+  timeout: 5000,
 });
 
-// 🔁 Generic retry helper
+// 🔁 Retry helper
 async function fetchWithRetry(fn, retries = 2) {
   for (let i = 0; i < retries; i++) {
     try {
@@ -19,12 +19,17 @@ async function fetchWithRetry(fn, retries = 2) {
   }
 }
 
-// 🌌 APOD (with cache)
+//
+// 🌌 APOD
+//
 exports.getApod = async () => {
   const cacheKey = "apod";
 
   const cached = getCache(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    console.log("⚡ APOD cache hit");
+    return cached;
+  }
 
   try {
     const res = await fetchWithRetry(() =>
@@ -36,7 +41,7 @@ exports.getApod = async () => {
     setCache(cacheKey, res.data, 60 * 60 * 1000); // 1 hour
     return res.data;
   } catch {
-    console.error("APOD API failed");
+    console.error("🚨 APOD failed → fallback");
 
     return {
       title: "Fallback APOD",
@@ -46,7 +51,9 @@ exports.getApod = async () => {
   }
 };
 
+//
 // 🚀 Mars
+//
 let marsFailed = false;
 
 exports.getMarsPhotos = async () => {
@@ -76,7 +83,7 @@ exports.getMarsPhotos = async () => {
     throw new Error("Invalid Mars data");
   } catch {
     if (!marsFailed) {
-      console.error("🚨 Mars API failed → fallback");
+      console.error("🚨 Mars failed → fallback");
       marsFailed = true;
     }
 
@@ -94,12 +101,17 @@ exports.getMarsPhotos = async () => {
   }
 };
 
-// ☄️ NEO (with cache)
+//
+// ☄️ NEO
+//
 exports.getNeoFeed = async () => {
   const cacheKey = "neo_feed";
 
   const cached = getCache(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    console.log("⚡ NEO cache hit");
+    return cached;
+  }
 
   try {
     const res = await fetchWithRetry(() =>
@@ -111,13 +123,17 @@ exports.getNeoFeed = async () => {
     setCache(cacheKey, res.data, 10 * 60 * 1000);
     return res.data;
   } catch {
-    console.error("NEO API failed");
+    console.error("🚨 NEO failed → fallback");
 
-    return { near_earth_objects: {} };
+    return {
+      near_earth_objects: {},
+    };
   }
 };
 
+//
 // 🌍 EPIC
+//
 let epicFailed = false;
 
 exports.getEpic = async () => {
@@ -142,11 +158,11 @@ exports.getEpic = async () => {
     throw new Error("No EPIC data");
   } catch {
     if (!epicFailed) {
-      console.error("🚨 EPIC fallback logic triggered");
+      console.error("🚨 EPIC fallback triggered");
       epicFailed = true;
     }
 
-    // 🔁 fallback last 5 days
+    // 🔁 Try last 5 days
     for (let i = 1; i <= 5; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
@@ -169,7 +185,9 @@ exports.getEpic = async () => {
   }
 };
 
+//
 // 🔍 Search
+//
 exports.searchImages = async (query = "space") => {
   try {
     const res = await fetchWithRetry(() =>
@@ -180,12 +198,15 @@ exports.searchImages = async (query = "space") => {
 
     return res.data;
   } catch {
-    console.error("Search API failed");
+    console.error("🚨 Search failed");
 
     return {
-      collection: { items: [] },
+      collection: {
+        items: [],
+      },
     };
   }
 };
 
-console.log("🚀 NASA Service initialized (optimized)");
+// 🔥 Init log
+console.log("🚀 NASA Service initialized (optimized + cached)");
